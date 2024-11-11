@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Flood Vulnerability Geo-Visualization Dashboard</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/NDVIenvironmental_1.js"></script>
+        <script src="data/NTLeconomic_2.js"></script>
+        <script src="data/BUIphysical_3.js"></script>
+        <script src="data/FloodVulnerability_4.js"></script>
+        <script src="data/PopulationDensitysocial_5.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#00fffb',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#00fffb',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[-9.672983795595146,110.74294943255548],[-5.742487818146934,116.38299198755551]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_BaseMapGoogleRoad_0');
+        map.getPane('pane_BaseMapGoogleRoad_0').style.zIndex = 400;
+        var layer_BaseMapGoogleRoad_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            pane: 'pane_BaseMapGoogleRoad_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_BaseMapGoogleRoad_0;
+        map.addLayer(layer_BaseMapGoogleRoad_0);
+        function pop_NDVIenvironmental_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Flood Vulnerability</th>\
+                        <td>' + (feature.properties['Vulnerability'] !== null ? autolinker.link(feature.properties['Vulnerability'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NDVI (environmental)</th>\
+                        <td>' + (feature.properties['NDVI'] !== null ? autolinker.link(feature.properties['NDVI'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_NDVIenvironmental_1_0(feature) {
+            if (feature.properties['NDVI'] >= 0.220000 && feature.properties['NDVI'] <= 0.338217 ) {
+                return {
+                pane: 'pane_NDVIenvironmental_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,252,245,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NDVI'] >= 0.338217 && feature.properties['NDVI'] <= 0.445960 ) {
+                return {
+                pane: 'pane_NDVIenvironmental_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,234,194,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NDVI'] >= 0.445960 && feature.properties['NDVI'] <= 0.553703 ) {
+                return {
+                pane: 'pane_NDVIenvironmental_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(123,199,124,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NDVI'] >= 0.553703 && feature.properties['NDVI'] <= 0.661446 ) {
+                return {
+                pane: 'pane_NDVIenvironmental_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(42,146,75,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NDVI'] >= 0.661446 && feature.properties['NDVI'] <= 0.800000 ) {
+                return {
+                pane: 'pane_NDVIenvironmental_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,68,27,1.0)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_NDVIenvironmental_1');
+        map.getPane('pane_NDVIenvironmental_1').style.zIndex = 401;
+        map.getPane('pane_NDVIenvironmental_1').style['mix-blend-mode'] = 'normal';
+        var layer_NDVIenvironmental_1 = new L.geoJson(json_NDVIenvironmental_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_NDVIenvironmental_1',
+            layerName: 'layer_NDVIenvironmental_1',
+            pane: 'pane_NDVIenvironmental_1',
+            onEachFeature: pop_NDVIenvironmental_1,
+            style: style_NDVIenvironmental_1_0,
+        });
+        bounds_group.addLayer(layer_NDVIenvironmental_1);
+        map.addLayer(layer_NDVIenvironmental_1);
+        function pop_NTLeconomic_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Flood Vulnerability</th>\
+                        <td>' + (feature.properties['Vulnerability'] !== null ? autolinker.link(feature.properties['Vulnerability'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NTL (economic)</th>\
+                        <td>' + (feature.properties['NTL'] !== null ? autolinker.link(feature.properties['NTL'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_NTLeconomic_2_0(feature) {
+            if (feature.properties['NTL'] >= 0.455000 && feature.properties['NTL'] <= 0.762000 ) {
+                return {
+                pane: 'pane_NTLeconomic_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,32,77,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NTL'] >= 0.762000 && feature.properties['NTL'] <= 0.913000 ) {
+                return {
+                pane: 'pane_NTLeconomic_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(65,77,107,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NTL'] >= 0.913000 && feature.properties['NTL'] <= 1.581000 ) {
+                return {
+                pane: 'pane_NTLeconomic_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,124,120,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NTL'] >= 1.581000 && feature.properties['NTL'] <= 5.333000 ) {
+                return {
+                pane: 'pane_NTLeconomic_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(190,175,111,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['NTL'] >= 5.333000 && feature.properties['NTL'] <= 25.590000 ) {
+                return {
+                pane: 'pane_NTLeconomic_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,234,70,1.0)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_NTLeconomic_2');
+        map.getPane('pane_NTLeconomic_2').style.zIndex = 402;
+        map.getPane('pane_NTLeconomic_2').style['mix-blend-mode'] = 'normal';
+        var layer_NTLeconomic_2 = new L.geoJson(json_NTLeconomic_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_NTLeconomic_2',
+            layerName: 'layer_NTLeconomic_2',
+            pane: 'pane_NTLeconomic_2',
+            onEachFeature: pop_NTLeconomic_2,
+            style: style_NTLeconomic_2_0,
+        });
+        bounds_group.addLayer(layer_NTLeconomic_2);
+        map.addLayer(layer_NTLeconomic_2);
+        function pop_BUIphysical_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Flood Vulnerability</th>\
+                        <td>' + (feature.properties['Vulnerability'] !== null ? autolinker.link(feature.properties['Vulnerability'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">BUI (physical)</th>\
+                        <td>' + (feature.properties['BUI'] !== null ? autolinker.link(feature.properties['BUI'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_BUIphysical_3_0(feature) {
+            if (feature.properties['BUI'] >= -1.200000 && feature.properties['BUI'] <= -1.000000 ) {
+                return {
+                pane: 'pane_BUIphysical_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['BUI'] >= -1.000000 && feature.properties['BUI'] <= -0.800000 ) {
+                return {
+                pane: 'pane_BUIphysical_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,191,191,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['BUI'] >= -0.800000 && feature.properties['BUI'] <= -0.600000 ) {
+                return {
+                pane: 'pane_BUIphysical_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,128,128,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['BUI'] >= -0.600000 && feature.properties['BUI'] <= -0.400000 ) {
+                return {
+                pane: 'pane_BUIphysical_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,64,64,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['BUI'] >= -0.400000 && feature.properties['BUI'] <= -0.200000 ) {
+                return {
+                pane: 'pane_BUIphysical_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,0,0,1.0)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_BUIphysical_3');
+        map.getPane('pane_BUIphysical_3').style.zIndex = 403;
+        map.getPane('pane_BUIphysical_3').style['mix-blend-mode'] = 'normal';
+        var layer_BUIphysical_3 = new L.geoJson(json_BUIphysical_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_BUIphysical_3',
+            layerName: 'layer_BUIphysical_3',
+            pane: 'pane_BUIphysical_3',
+            onEachFeature: pop_BUIphysical_3,
+            style: style_BUIphysical_3_0,
+        });
+        bounds_group.addLayer(layer_BUIphysical_3);
+        map.addLayer(layer_BUIphysical_3);
+        function pop_FloodVulnerability_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Flood Vulnerability</th>\
+                        <td>' + (feature.properties['Vulnerability'] !== null ? autolinker.link(feature.properties['Vulnerability'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Population Density (social)</th>\
+                        <td>' + (feature.properties['Population_Density'] !== null ? autolinker.link(feature.properties['Population_Density'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">BUI (physical)</th>\
+                        <td>' + (feature.properties['BUI'] !== null ? autolinker.link(feature.properties['BUI'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NTL (economic)</th>\
+                        <td>' + (feature.properties['NTL'] !== null ? autolinker.link(feature.properties['NTL'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NDVI (environmental)</th>\
+                        <td>' + (feature.properties['NDVI'] !== null ? autolinker.link(feature.properties['NDVI'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_FloodVulnerability_4_0(feature) {
+            switch(String(feature.properties['Vulnerability'])) {
+                case 'High':
+                    return {
+                pane: 'pane_FloodVulnerability_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,41,41,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Medium':
+                    return {
+                pane: 'pane_FloodVulnerability_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,255,143,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_FloodVulnerability_4');
+        map.getPane('pane_FloodVulnerability_4').style.zIndex = 404;
+        map.getPane('pane_FloodVulnerability_4').style['mix-blend-mode'] = 'normal';
+        var layer_FloodVulnerability_4 = new L.geoJson(json_FloodVulnerability_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_FloodVulnerability_4',
+            layerName: 'layer_FloodVulnerability_4',
+            pane: 'pane_FloodVulnerability_4',
+            onEachFeature: pop_FloodVulnerability_4,
+            style: style_FloodVulnerability_4_0,
+        });
+        bounds_group.addLayer(layer_FloodVulnerability_4);
+        map.addLayer(layer_FloodVulnerability_4);
+        function pop_PopulationDensitysocial_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Population Density</th>\
+                        <td>' + (feature.properties['Population'] !== null ? autolinker.link(feature.properties['Population'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PopulationDensitysocial_5_0(feature) {
+            if (feature.properties['Population'] >= 414.000000 && feature.properties['Population'] <= 1000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 1000.000000 && feature.properties['Population'] <= 2000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 5.5,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 2000.000000 && feature.properties['Population'] <= 3000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 7.0,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 3000.000000 && feature.properties['Population'] <= 4000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 8.5,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 4000.000000 && feature.properties['Population'] <= 5000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 5000.000000 && feature.properties['Population'] <= 6000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 11.5,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 6000.000000 && feature.properties['Population'] <= 7000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 13.0,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 7000.000000 && feature.properties['Population'] <= 8000.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 14.5,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['Population'] >= 8000.000000 && feature.properties['Population'] <= 8595.000000 ) {
+                return {
+                pane: 'pane_PopulationDensitysocial_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(247,247,247,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,40,162,1.0)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_PopulationDensitysocial_5');
+        map.getPane('pane_PopulationDensitysocial_5').style.zIndex = 405;
+        map.getPane('pane_PopulationDensitysocial_5').style['mix-blend-mode'] = 'normal';
+        var layer_PopulationDensitysocial_5 = new L.geoJson(json_PopulationDensitysocial_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PopulationDensitysocial_5',
+            layerName: 'layer_PopulationDensitysocial_5',
+            pane: 'pane_PopulationDensitysocial_5',
+            onEachFeature: pop_PopulationDensitysocial_5,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_PopulationDensitysocial_5_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PopulationDensitysocial_5);
+        map.addLayer(layer_PopulationDensitysocial_5);
+        var overlaysTree = [
+            {label: 'Population Density (social)<br /><table><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_41410000.png" /></td><td>414 - 1000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_100020001.png" /></td><td>1000 - 2000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_200030002.png" /></td><td>2000 - 3000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_300040003.png" /></td><td>3000 - 4000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_400050004.png" /></td><td>4000 - 5000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_500060005.png" /></td><td>5000 - 6000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_600070006.png" /></td><td>6000 - 7000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_700080007.png" /></td><td>7000 - 8000</td></tr><tr><td style="text-align: center;"><img src="legend/PopulationDensitysocial_5_800085958.png" /></td><td>8000 - 8595</td></tr></table>', layer: layer_PopulationDensitysocial_5},
+            {label: 'Flood Vulnerability<br /><table><tr><td style="text-align: center;"><img src="legend/FloodVulnerability_4_High0.png" /></td><td>High</td></tr><tr><td style="text-align: center;"><img src="legend/FloodVulnerability_4_Medium1.png" /></td><td>Medium</td></tr></table>', layer: layer_FloodVulnerability_4},
+            {label: 'BUI (physical)<br /><table><tr><td style="text-align: center;"><img src="legend/BUIphysical_3_1210.png" /></td><td>-1,2 - -1</td></tr><tr><td style="text-align: center;"><img src="legend/BUIphysical_3_1081.png" /></td><td>-1 - -0,8</td></tr><tr><td style="text-align: center;"><img src="legend/BUIphysical_3_08062.png" /></td><td>-0,8 - -0,6</td></tr><tr><td style="text-align: center;"><img src="legend/BUIphysical_3_06043.png" /></td><td>-0,6 - -0,4</td></tr><tr><td style="text-align: center;"><img src="legend/BUIphysical_3_04024.png" /></td><td>-0,4 - -0,2</td></tr></table>', layer: layer_BUIphysical_3},
+            {label: 'NTL (economic)<br /><table><tr><td style="text-align: center;"><img src="legend/NTLeconomic_2_0450760.png" /></td><td>0,45 - 0,76</td></tr><tr><td style="text-align: center;"><img src="legend/NTLeconomic_2_0760911.png" /></td><td>0,76 - 0,91</td></tr><tr><td style="text-align: center;"><img src="legend/NTLeconomic_2_0911582.png" /></td><td>0,91 - 1,58</td></tr><tr><td style="text-align: center;"><img src="legend/NTLeconomic_2_1585333.png" /></td><td>1,58 - 5,33</td></tr><tr><td style="text-align: center;"><img src="legend/NTLeconomic_2_53325594.png" /></td><td>5,33 - 25,59</td></tr></table>', layer: layer_NTLeconomic_2},
+            {label: 'NDVI (environmental)<br /><table><tr><td style="text-align: center;"><img src="legend/NDVIenvironmental_1_0220340.png" /></td><td>0,22- 0,34</td></tr><tr><td style="text-align: center;"><img src="legend/NDVIenvironmental_1_0340451.png" /></td><td>0,34 - 0,45</td></tr><tr><td style="text-align: center;"><img src="legend/NDVIenvironmental_1_0450552.png" /></td><td>0,45 - 0,55</td></tr><tr><td style="text-align: center;"><img src="legend/NDVIenvironmental_1_0550663.png" /></td><td>0,55 - 0,66</td></tr><tr><td style="text-align: center;"><img src="legend/NDVIenvironmental_1_0660804.png" /></td><td>0,66 - 0,80</td></tr></table>', layer: layer_NDVIenvironmental_1},
+            {label: "Base Map - Google Road", layer: layer_BaseMapGoogleRoad_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"Population_Density": "int","Region": "str","Vulnerability": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_Population_Density = document.createElement("div");
+            div_Population_Density.id = "div_Population_Density";
+            div_Population_Density.className = "slider";
+            document.getElementById("menu").appendChild(div_Population_Density);
+            var lab_Population_Density = document.createElement('div');
+            lab_Population_Density.innerHTML  = 'Population_Density: <span id="val_Population_Density"></span>';
+            lab_Population_Density.className = 'filterlabel';
+            document.getElementById("menu").appendChild(lab_Population_Density);
+            var reset_Population_Density = document.createElement('div');
+            reset_Population_Density.innerHTML = 'clear filter';
+            reset_Population_Density.className = 'filterlabel';
+            lab_Population_Density.className = 'filterlabel';
+            reset_Population_Density.onclick = function() {
+                sel_Population_Density.noUiSlider.reset();
+            };
+            document.getElementById("menu").appendChild(reset_Population_Density);
+            var sel_Population_Density = document.getElementById('div_Population_Density');
+            noUiSlider.create(sel_Population_Density, {
+                connect: true,
+                start: [414, 8595],
+                step: 1,
+                format: wNumb({
+                    decimals: 0,
+                    }),
+                range: {
+                min: 414,
+                max: 8595
+                }
+            });
+            sel_Population_Density.noUiSlider.on('update', function (values) {
+            filterVals =[];
+            for (value in values){
+            filterVals.push(parseInt(value))
+            }
+            val_Population_Density = document.getElementById('val_Population_Density');
+            val_Population_Density.innerHTML = values.join(' - ');
+                filterFunc()
+            });
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_Region = document.createElement('div');
+            div_Region.id = "div_Region";
+            div_Region.className= "filterselect";
+            document.getElementById("menu").appendChild(div_Region);
+            sel_Region = document.createElement('select');
+            sel_Region.multiple = true;
+            sel_Region.size = 10;
+            sel_Region.id = "sel_Region";
+            var Region_options_str = "<option value='' unselected></option>";
+            sel_Region.onchange = function(){filterFunc()};
+            Region_options_str  += '<option value="Bangkalan">Bangkalan</option>';
+            Region_options_str  += '<option value="Banyuwangi">Banyuwangi</option>';
+            Region_options_str  += '<option value="Batu City">Batu City</option>';
+            Region_options_str  += '<option value="Blitar">Blitar</option>';
+            Region_options_str  += '<option value="Blitar City">Blitar City</option>';
+            Region_options_str  += '<option value="Bojonegoro">Bojonegoro</option>';
+            Region_options_str  += '<option value="Bondowoso">Bondowoso</option>';
+            Region_options_str  += '<option value="Gresik">Gresik</option>';
+            Region_options_str  += '<option value="Jember">Jember</option>';
+            Region_options_str  += '<option value="Jombang">Jombang</option>';
+            Region_options_str  += '<option value="Kediri">Kediri</option>';
+            Region_options_str  += '<option value="Kediri City">Kediri City</option>';
+            Region_options_str  += '<option value="Lamongan">Lamongan</option>';
+            Region_options_str  += '<option value="Lumajang">Lumajang</option>';
+            Region_options_str  += '<option value="Madiun">Madiun</option>';
+            Region_options_str  += '<option value="Madiun City">Madiun City</option>';
+            Region_options_str  += '<option value="Magetan">Magetan</option>';
+            Region_options_str  += '<option value="Malang">Malang</option>';
+            Region_options_str  += '<option value="Malang City">Malang City</option>';
+            Region_options_str  += '<option value="Mojokerto">Mojokerto</option>';
+            Region_options_str  += '<option value="Mojokerto City">Mojokerto City</option>';
+            Region_options_str  += '<option value="Nganjuk">Nganjuk</option>';
+            Region_options_str  += '<option value="Ngawi">Ngawi</option>';
+            Region_options_str  += '<option value="Pacitan">Pacitan</option>';
+            Region_options_str  += '<option value="Pamekasan">Pamekasan</option>';
+            Region_options_str  += '<option value="Pasuruan">Pasuruan</option>';
+            Region_options_str  += '<option value="Pasuruan City">Pasuruan City</option>';
+            Region_options_str  += '<option value="Ponorogo">Ponorogo</option>';
+            Region_options_str  += '<option value="Probolinggo">Probolinggo</option>';
+            Region_options_str  += '<option value="Probolinggo City">Probolinggo City</option>';
+            Region_options_str  += '<option value="Sampang">Sampang</option>';
+            Region_options_str  += '<option value="Sidoarjo">Sidoarjo</option>';
+            Region_options_str  += '<option value="Situbondo">Situbondo</option>';
+            Region_options_str  += '<option value="Sumenep">Sumenep</option>';
+            Region_options_str  += '<option value="Surabaya City">Surabaya City</option>';
+            Region_options_str  += '<option value="Trenggalek">Trenggalek</option>';
+            Region_options_str  += '<option value="Tuban">Tuban</option>';
+            Region_options_str  += '<option value="Tulungagung">Tulungagung</option>';
+            sel_Region.innerHTML = Region_options_str;
+            div_Region.appendChild(sel_Region);
+            var lab_Region = document.createElement('div');
+            lab_Region.innerHTML = 'Region';
+            lab_Region.className = 'filterlabel';
+            div_Region.appendChild(lab_Region);
+            var reset_Region = document.createElement('div');
+            reset_Region.innerHTML = 'clear filter';
+            reset_Region.className = 'filterlabel';
+            reset_Region.onclick = function() {
+                var options = document.getElementById("sel_Region").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_Region.appendChild(reset_Region);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_Vulnerability = document.createElement('div');
+            div_Vulnerability.id = "div_Vulnerability";
+            div_Vulnerability.className= "filterselect";
+            document.getElementById("menu").appendChild(div_Vulnerability);
+            sel_Vulnerability = document.createElement('select');
+            sel_Vulnerability.multiple = true;
+            sel_Vulnerability.size = 2;
+            sel_Vulnerability.id = "sel_Vulnerability";
+            var Vulnerability_options_str = "<option value='' unselected></option>";
+            sel_Vulnerability.onchange = function(){filterFunc()};
+            Vulnerability_options_str  += '<option value="High">High</option>';
+            Vulnerability_options_str  += '<option value="Medium">Medium</option>';
+            sel_Vulnerability.innerHTML = Vulnerability_options_str;
+            div_Vulnerability.appendChild(sel_Vulnerability);
+            var lab_Vulnerability = document.createElement('div');
+            lab_Vulnerability.innerHTML = 'Vulnerability';
+            lab_Vulnerability.className = 'filterlabel';
+            div_Vulnerability.appendChild(lab_Vulnerability);
+            var reset_Vulnerability = document.createElement('div');
+            reset_Vulnerability.innerHTML = 'clear filter';
+            reset_Vulnerability.className = 'filterlabel';
+            reset_Vulnerability.onclick = function() {
+                var options = document.getElementById("sel_Vulnerability").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_Vulnerability.appendChild(reset_Vulnerability);
+        </script>
+    </body>
+</html>
